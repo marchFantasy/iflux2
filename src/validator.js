@@ -18,10 +18,26 @@ export default class Validator {
     const opts = Object.assign({}, {
       oneError: false,
       debug: false,
+      validateFields: []
     }, options);
 
+    let validateFields = opts.validateFields;
+    let validateRules = {};
 
-    for (let field in rules) {
+    //如果有自定义校验的字段，只校验自定义的字段
+    //如果没有，则全部校验
+    if (validateFields.length) {
+      validateFields.reduce((init, field) => {
+        if (rules[field]) {
+          init[field] = rules[field];
+        }
+        return init;
+      }, validateRules);
+    } else {
+      validateRules = rules;
+    }
+
+    for (let field in validateRules) {
       if (rules.hasOwnProperty(field)) {
         /**
          * 获取规则对象, 例如:
@@ -53,9 +69,13 @@ export default class Validator {
             const ruleValue = ruleMap[rule];
             //封装传递给校验函数的参数
             const args = [];
+            //是不是boolean类型且为false的规则
+            const isRuleValueFalse = typeof(ruleValue) === 'boolean' && ruleValue === false;
+            //当前的字段不是必填项,切值为空
+            const isNotRequired = !ruleMap['required'] && !value;
 
             //如果规则的值为布尔类型且为false,跳过校验
-            if (typeof(ruleValue) === 'boolean' && ruleValue === false) {
+            if (isRuleValueFalse || isNotRequired) {
               continue;
             } else if (typeof(ruleValue) === 'boolean') {
               args.push(value)
@@ -120,6 +140,7 @@ export default class Validator {
    * @returns {boolean}
    */
   static email(value) {
+
     return /^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/.test(value);
   }
 
